@@ -936,15 +936,15 @@ export default function App() {
                                     {/* Edit / Delete */}
                                     <div className="h-6 w-px bg-slate-200 mx-1"></div>
                                     
-                                    {/* Only allow edit in PLANNED stage */}
-                                    {order.status === OrderStatus.PLANNED && (
+                                    {/* Allow edit in PLANNED stage OR CUTTING (Pre-confirmation: activeCuttingItems empty) */}
+                                    {(order.status === OrderStatus.PLANNED || (order.status === OrderStatus.CUTTING && order.activeCuttingItems.length === 0)) && (
                                         <button onClick={() => handleEditOrder(order)} className="text-slate-400 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded transition-colors" title="Editar Pedido">
                                             <Edit2 size={16} />
                                         </button>
                                     )}
                                     
-                                    {/* Only allow DELETE in PLANNED stage */}
-                                    {order.status === OrderStatus.PLANNED && (
+                                    {/* Allow DELETE in PLANNED stage OR CUTTING (Pre-confirmation: activeCuttingItems empty) */}
+                                    {(order.status === OrderStatus.PLANNED || (order.status === OrderStatus.CUTTING && order.activeCuttingItems.length === 0)) && (
                                         <button onClick={() => handleDeleteOrder(order.id)} className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition-colors" title="Excluir Pedido">
                                             <Trash2 size={16} />
                                         </button>
@@ -978,7 +978,7 @@ export default function App() {
                                                                     <span className="font-bold text-lg text-slate-800">{item.actualPieces}</span>
                                                                 </div>
                                                             </div>
-                                                        )) : <p className="text-sm text-slate-400 italic col-span-4">Nenhum item restante no corte.</p>}
+                                                        )) : <p className="text-sm text-slate-400 italic col-span-4">Nenhum item restante no corte (ou aguardando confirmação).</p>}
                                                     </div>
                                                 </div>
                                             )}
