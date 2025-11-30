@@ -1,14 +1,21 @@
 import { GoogleGenAI } from "@google/genai";
 import { ProductionOrder, Seamstress } from "../types";
 
-// The API Key is injected by vite.config.ts from the environment variable API_KEY
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const generateProductionInsights = async (
   orders: ProductionOrder[],
   seamstresses: Seamstress[]
 ): Promise<string> => {
   try {
+    const apiKey = process.env.API_KEY;
+
+    if (!apiKey) {
+      console.warn("API Key do Google Gemini não encontrada.");
+      return "Configuração de IA pendente: Adicione a variável API_KEY nas configurações da Vercel.";
+    }
+
+    // Initialize client only when requested and key is present
+    const ai = new GoogleGenAI({ apiKey });
+
     const dataContext = JSON.stringify({
       orders: orders.map(o => ({
         ref: o.referenceCode,
@@ -48,6 +55,6 @@ export const generateProductionInsights = async (
     return response.text || "Não foi possível gerar a análise no momento.";
   } catch (error) {
     console.error("Erro ao gerar insights:", error);
-    return "Erro ao conectar com a IA da Kavin's. Verifique sua chave de API nas configurações da Vercel.";
+    return "Erro ao conectar com a IA da Kavin's. Verifique os logs ou a chave de API.";
   }
 };
