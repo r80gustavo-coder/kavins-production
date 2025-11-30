@@ -136,13 +136,20 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
     if (!selectedRef) return;
 
     const productionItems: ProductionOrderItem[] = items.map(item => {
+      // Calculate sizes based on current form input
       const initialSizes: any = {};
       selectedSizes.forEach(s => initialSizes[s] = item.piecesPerSize);
       
       const totalEstimated = item.piecesPerSize * selectedSizes.length;
 
-      // Preserve actualPieces if editing, or set to 0
       const existingItem = orderToEdit?.items.find(i => i.color === item.color);
+
+      // CRITICAL LOGIC: 
+      // If the cut has already been confirmed (activeCuttingItems exist), we MUST preserve the exact sizes saved previously.
+      // If the cut has NOT been confirmed (empty activeItems), we SHOULD update the sizes based on the new input values.
+      const isCutConfirmed = orderToEdit && orderToEdit.activeCuttingItems && orderToEdit.activeCuttingItems.length > 0;
+      
+      const finalSizes = (existingItem && isCutConfirmed) ? existingItem.sizes : initialSizes;
 
       return {
         color: item.color,
@@ -151,7 +158,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
         piecesPerSizeEst: item.piecesPerSize,
         estimatedPieces: totalEstimated,
         actualPieces: existingItem ? existingItem.actualPieces : 0, 
-        sizes: existingItem ? existingItem.sizes : initialSizes
+        sizes: finalSizes
       };
     });
 
