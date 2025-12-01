@@ -80,6 +80,20 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
     }
   }, [selectedRef]);
 
+  // Recalculate estimates whenever selectedSizes changes
+  useEffect(() => {
+    if (selectedRef?.estimatedPiecesPerRoll && selectedSizes.length > 0) {
+        setItems(prevItems => prevItems.map(item => {
+            if (item.rollsUsed > 0) {
+                 const totalEstimated = item.rollsUsed * (selectedRef.estimatedPiecesPerRoll || 0);
+                 const avgPerSize = Math.floor(totalEstimated / selectedSizes.length);
+                 return { ...item, piecesPerSize: avgPerSize };
+            }
+            return item;
+        }));
+    }
+  }, [selectedSizes, selectedRef]);
+
   const resetForm = () => {
     setCustomId(suggestedId || '');
     setOrderDate(new Date().toISOString().split('T')[0]);
@@ -461,4 +475,4 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
       </div>
     </div>
   );
-};
+}

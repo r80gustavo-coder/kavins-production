@@ -656,15 +656,10 @@ export default function App() {
             .rolls-qty {
                 width: 100px;
             }
-            .squares {
-                display: flex;
-                gap: 5px;
-            }
-            .sq {
-                width: 30px;
-                height: 25px;
-                border: 1px solid #000;
-                background: #fff;
+            .notes-space {
+                flex: 1;
+                border-bottom: 1px solid #ddd;
+                height: 20px;
             }
             @media print {
                 button { display: none; }
@@ -703,10 +698,7 @@ export default function App() {
                           <div class="color-row">
                               <span class="color-name">${item.color}</span>
                               <span class="rolls-qty">Rolos: ${item.rollsUsed}</span>
-                              <div class="squares">
-                                  <div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div>
-                                  <div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div>
-                              </div>
+                              <div class="notes-space"></div>
                           </div>
                       `).join('')}
                   </div>
