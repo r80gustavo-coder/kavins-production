@@ -110,6 +110,16 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
   const updateItem = (index: number, field: keyof OrderItemInput, value: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
+    
+    // AUTOMATION: If changing rolls and product has estimated yield, calculate pieces per size
+    if (field === 'rollsUsed' && selectedRef?.estimatedPiecesPerRoll && selectedSizes.length > 0) {
+        const rolls = parseFloat(value) || 0;
+        const totalEstimated = rolls * selectedRef.estimatedPiecesPerRoll;
+        // Distribute average across sizes
+        const avgPerSize = Math.floor(totalEstimated / selectedSizes.length);
+        newItems[index].piecesPerSize = avgPerSize;
+    }
+
     setItems(newItems);
   };
 
@@ -374,10 +384,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({ isOpen, onClose, onSave,
                         <input 
                           required
                           type="number"
-                          min="1"
+                          min="0.1"
+                          step="0.1"
                           className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                           value={item.rollsUsed || ''}
-                          onChange={e => updateItem(index, 'rollsUsed', parseFloat(e.target.value))}
+                          onChange={e => updateItem(index, 'rollsUsed', e.target.value)}
                         />
                       </div>
                       <div className="w-32">

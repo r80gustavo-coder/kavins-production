@@ -32,6 +32,7 @@ export interface ProductReference {
   defaultFabric: string; 
   defaultColors: ProductColor[]; 
   defaultGrid: GridType;
+  estimatedPiecesPerRoll?: number; // New field for automation
 }
 
 export interface Seamstress {

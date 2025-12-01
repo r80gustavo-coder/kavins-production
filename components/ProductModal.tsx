@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, Edit2 } from 'lucide-react';
+import { X, Save, Plus, Trash2, Edit2, Ruler } from 'lucide-react';
 import { ProductReference, GridType, ProductColor } from '../types';
 
 interface ProductModalProps {
@@ -16,6 +16,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
     defaultFabric: '',
     defaultColors: [] as ProductColor[],
     defaultGrid: 'STANDARD' as GridType,
+    estimatedPiecesPerRoll: 0,
   });
   
   // New Color State
@@ -31,10 +32,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
           defaultFabric: productToEdit.defaultFabric,
           defaultColors: productToEdit.defaultColors,
           defaultGrid: productToEdit.defaultGrid,
+          estimatedPiecesPerRoll: productToEdit.estimatedPiecesPerRoll || 0,
         });
       } else {
         // Reset for new product
-        setFormData({ code: '', description: '', defaultFabric: '', defaultColors: [], defaultGrid: 'STANDARD' });
+        setFormData({ code: '', description: '', defaultFabric: '', defaultColors: [], defaultGrid: 'STANDARD', estimatedPiecesPerRoll: 0 });
       }
       setNewColorName('');
       setNewColorHex('#000000');
@@ -123,17 +125,33 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Grade Padrão</label>
-            <select
-              className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-              value={formData.defaultGrid}
-              onChange={e => setFormData({ ...formData, defaultGrid: e.target.value as GridType })}
-            >
-              <option value="STANDARD">Padrão (P ao GG)</option>
-              <option value="PLUS">Plus Size (G1 ao G3)</option>
-              <option value="CUSTOM">Personalizada</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Grade Padrão</label>
+                <select
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={formData.defaultGrid}
+                onChange={e => setFormData({ ...formData, defaultGrid: e.target.value as GridType })}
+                >
+                <option value="STANDARD">Padrão (P ao GG)</option>
+                <option value="PLUS">Plus Size (G1 ao G3)</option>
+                <option value="CUSTOM">Personalizada</option>
+                </select>
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
+                    <Ruler size={14}/> Est. Peças/Rolo
+                </label>
+                <input
+                type="number"
+                min="0"
+                placeholder="Ex: 50"
+                title="Estimativa média de quantas peças um rolo rende (para cálculo automático)"
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={formData.estimatedPiecesPerRoll || ''}
+                onChange={e => setFormData({ ...formData, estimatedPiecesPerRoll: parseInt(e.target.value) || 0 })}
+                />
+            </div>
           </div>
 
           <div>

@@ -27,7 +27,8 @@ import {
   Activity,
   StickyNote,
   Loader2,
-  Scroll
+  Scroll,
+  Printer
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -561,6 +562,129 @@ export default function App() {
     setLoadingAi(false);
   };
 
+  const handlePrintPlannedOrders = () => {
+    const plannedOrders = orders.filter(o => o.status === OrderStatus.PLANNED);
+    
+    if (plannedOrders.length === 0) {
+        alert("Não há pedidos planejados para imprimir.");
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Ordens Planejadas - Kavin's</title>
+          <style>
+            body { font-family: 'Arial', sans-serif; padding: 20px; }
+            .order-card { 
+                border: 2px solid #000; 
+                margin-bottom: 20px; 
+                page-break-inside: avoid;
+                padding: 10px;
+            }
+            .header {
+                font-size: 16px;
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 10px;
+                margin-bottom: 10px;
+            }
+            .header-row {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 5px;
+            }
+            .label { font-weight: bold; }
+            .colors-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .color-row {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                border-bottom: 1px dashed #eee;
+                padding: 5px 0;
+            }
+            .color-name {
+                width: 150px;
+                font-weight: bold;
+            }
+            .rolls-qty {
+                width: 100px;
+            }
+            .squares {
+                display: flex;
+                gap: 5px;
+            }
+            .sq {
+                width: 30px;
+                height: 25px;
+                border: 1px solid #000;
+                background: #fff;
+            }
+            @media print {
+                button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2 style="text-align:center; margin-bottom: 20px;">Relatório de Corte - Planejados</h2>
+          
+          ${plannedOrders.map(order => {
+              // Determine size string
+              let sizesStr = '';
+              if (order.gridType === 'STANDARD') sizesStr = 'P, M, G, GG';
+              else if (order.gridType === 'PLUS') sizesStr = 'G1, G2, G3';
+              else if (order.items.length > 0) sizesStr = Object.keys(order.items[0].sizes).join(', ');
+
+              return `
+              <div class="order-card">
+                  <div class="header">
+                      <div class="header-row">
+                          <span><span class="label">Pedido:</span> #${order.id}</span>
+                          <span><span class="label">Ref:</span> ${order.referenceCode}</span>
+                          <span><span class="label">Tecido:</span> ${order.fabric}</span>
+                          <span><span class="label">Grade:</span> ${sizesStr}</span>
+                      </div>
+                      <div class="header-row">
+                          <span><span class="label">Descrição:</span> ${order.description}</span>
+                      </div>
+                      <div class="header-row">
+                           <span style="font-size: 12px; color: #666;">Obs: ${order.notes || '-'}</span>
+                      </div>
+                  </div>
+                  
+                  <div class="colors-container">
+                      ${order.items.map(item => `
+                          <div class="color-row">
+                              <span class="color-name">${item.color}</span>
+                              <span class="rolls-qty">Rolos: ${item.rollsUsed}</span>
+                              <div class="squares">
+                                  <div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div>
+                                  <div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div><div class="sq"></div>
+                              </div>
+                          </div>
+                      `).join('')}
+                  </div>
+              </div>
+              `;
+          }).join('')}
+
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   // --- REPORT FILTER LOGIC ---
   const reportData = useMemo(() => {
       let filtered = orders;
@@ -697,6 +821,13 @@ export default function App() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input type="text" placeholder="Buscar ordem..." className="pl-10 pr-4 py-2 rounded-full border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-100 outline-none w-64 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
+                
+                {productionStage === OrderStatus.PLANNED && (
+                    <button onClick={handlePrintPlannedOrders} className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-full font-medium flex items-center gap-2 shadow-sm transition-all active:scale-95">
+                        <Printer size={18} /> Imprimir Lista
+                    </button>
+                )}
+
                 <button onClick={() => { setOrderToEdit(null); setIsOrderModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-medium flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all active:scale-95">
                     <Plus size={18} /> Nova Ordem
                 </button>
