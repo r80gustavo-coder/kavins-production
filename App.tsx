@@ -315,25 +315,65 @@ export default function App() {
 
   const handleSaveProduct = async (product: Omit<ProductReference, 'id'> | ProductReference) => {
     try {
+        // Ensure numeric fields are correctly formatted or null if not present
+        const payload = {
+            ...product,
+            estimatedPiecesPerRoll: product.estimatedPiecesPerRoll ? Number(product.estimatedPiecesPerRoll) : null
+        };
+
         let savedProduct: ProductReference;
+        
         if ('id' in product) {
             // Update
-            const { error } = await supabase.from('products').update(product).eq('id', product.id);
-            if (error) throw error;
-            savedProduct = product as ProductReference;
+            const { error } = await supabase.from('products').update(payload).eq('id', product.id);
+            
+            if (error) {
+                // FALLBACK: If column 'estimatedPiecesPerRoll' missing, try saving without it
+                if (error.code === '42703') { // 42703 is Undefined Column
+                     console.warn("Column missing, retrying without estimatedPiecesPerRoll");
+                     const { estimatedPiecesPerRoll, ...safePayload } = payload;
+                     const { error: retryError } = await supabase.from('products').update(safePayload).eq('id', product.id);
+                     if (retryError) throw retryError;
+                     
+                     alert("Produto salvo, mas o campo 'Estimativa Peças/Rolo' não foi gravado pois a coluna não existe no banco de dados.");
+                     savedProduct = { ...product, ...safePayload } as ProductReference;
+                } else {
+                    throw error;
+                }
+            } else {
+                savedProduct = { ...product, ...payload } as ProductReference;
+            }
+            
             setReferences(prev => prev.map(r => r.id === product.id ? savedProduct : r));
         } else {
             // Insert
-            const newId = Math.random().toString(36).substr(2, 9);
-            const newProduct = { ...product, id: newId };
+            // Use crypto.randomUUID() for safer IDs (works in modern browsers/HTTPS), fallback to random string
+            const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9);
+            const newProduct = { ...payload, id: newId };
+            
             const { error } = await supabase.from('products').insert([newProduct]);
-            if (error) throw error;
-            savedProduct = newProduct as ProductReference;
+            
+            if (error) {
+                 // FALLBACK: If column 'estimatedPiecesPerRoll' missing, try saving without it
+                 if (error.code === '42703') {
+                     console.warn("Column missing, retrying without estimatedPiecesPerRoll");
+                     const { estimatedPiecesPerRoll, ...safePayload } = newProduct;
+                     const { error: retryError } = await supabase.from('products').insert([safePayload]);
+                     if (retryError) throw retryError;
+                     
+                     alert("Produto salvo, mas o campo 'Estimativa Peças/Rolo' não foi gravado pois a coluna não existe no banco de dados.");
+                     savedProduct = safePayload as ProductReference;
+                 } else {
+                     throw error;
+                 }
+            } else {
+                savedProduct = newProduct as ProductReference;
+            }
             setReferences(prev => [...prev, savedProduct]);
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error saving product:", error);
-        alert("Erro ao salvar produto.");
+        alert(`Erro ao salvar produto: ${error.message || 'Erro desconhecido'}. Tente verificar se a tabela 'products' possui todas as colunas necessárias.`);
     }
   };
 
@@ -346,7 +386,7 @@ export default function App() {
               savedSeamstress = seamstress as Seamstress;
               setSeamstresses(prev => prev.map(s => s.id === seamstress.id ? savedSeamstress : s));
           } else {
-              const newId = Math.random().toString(36).substr(2, 9);
+              const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9);
               const newSeamstress = { ...seamstress, id: newId };
               const { error } = await supabase.from('seamstresses').insert([newSeamstress]);
               if (error) throw error;
