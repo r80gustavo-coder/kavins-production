@@ -1157,7 +1157,14 @@ export default function App() {
                                                                         <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">{split.seamstressName.charAt(0)}</div>
                                                                         <div className="font-medium text-slate-800">{split.seamstressName}</div>
                                                                     </div>
-                                                                    <div className={`mt-2 text-xs font-bold px-2 py-0.5 rounded w-fit ${split.status === OrderStatus.FINISHED ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>{split.status}</div>
+                                                                    <div className="mt-2 flex flex-col items-start gap-1">
+                                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded w-fit ${split.status === OrderStatus.FINISHED ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>{split.status}</span>
+                                                                        {split.status === OrderStatus.FINISHED && split.finishedAt && (
+                                                                            <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                                                                <Clock size={10} /> {new Date(split.finishedAt).toLocaleDateString()}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
                                                                      {split.items.map((item, idx) => (
@@ -1323,9 +1330,16 @@ export default function App() {
                                                   <div key={s.id} className="text-sm bg-slate-50 p-2 rounded-lg border border-slate-100">
                                                       <div className="flex justify-between items-center mb-1 border-b border-slate-200 pb-1">
                                                           <span className="font-bold text-slate-700">{s.seamstressName}</span>
-                                                          <span className={s.status === OrderStatus.FINISHED ? 'text-emerald-600 text-xs font-bold' : 'text-amber-600 text-xs font-bold'}>
-                                                              {s.status === OrderStatus.FINISHED ? 'Concluído' : 'Em Andamento'}
-                                                          </span>
+                                                          <div className="text-right">
+                                                              <div className={s.status === OrderStatus.FINISHED ? 'text-emerald-600 text-xs font-bold' : 'text-amber-600 text-xs font-bold'}>
+                                                                  {s.status === OrderStatus.FINISHED ? 'Concluído' : 'Em Andamento'}
+                                                              </div>
+                                                              {s.status === OrderStatus.FINISHED && s.finishedAt && (
+                                                                  <div className="text-[10px] text-slate-400">
+                                                                      {new Date(s.finishedAt).toLocaleDateString()}
+                                                                  </div>
+                                                              )}
+                                                          </div>
                                                       </div>
                                                       <div className="space-y-1 mt-1">
                                                           {s.items.map((item, idx) => {
