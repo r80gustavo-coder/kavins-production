@@ -503,8 +503,11 @@ export default function App() {
         }
     });
     
+    // FIX: Use robust ID generation to prevent duplicates which caused date issues
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `split-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const newSplit: OrderSplit = {
-        id: `split-${Date.now()}`,
+        id: newId,
         seamstressId: seamstress.id,
         seamstressName: seamstress.name,
         status: OrderStatus.SEWING,
@@ -550,11 +553,20 @@ export default function App() {
     }
   };
 
-  const handleMarkSplitFinished = async (orderId: string, splitId: string) => {
+  const handleMarkSplitFinished = async (orderId: string, splitIndex: number) => {
       const order = orders.find(o => o.id === orderId);
       if(!order) return;
 
-      const updatedSplits = order.splits.map(s => s.id === splitId ? { ...s, status: OrderStatus.FINISHED, finishedAt: new Date().toISOString() } : s);
+      // FIX: Use index to identify the split instead of ID to handle legacy duplicate IDs correctly
+      const updatedSplits = [...order.splits];
+      if (!updatedSplits[splitIndex]) return;
+
+      updatedSplits[splitIndex] = {
+          ...updatedSplits[splitIndex],
+          status: OrderStatus.FINISHED,
+          finishedAt: new Date().toISOString()
+      };
+
       const cuttingEmpty = order.activeCuttingItems.every(i => i.actualPieces === 0);
       const allSplitsFinished = updatedSplits.every(s => s.status === OrderStatus.FINISHED);
       
@@ -1150,8 +1162,8 @@ export default function App() {
                                                 <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                                                     <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3"><Users size={18} className="text-amber-600"/> Distribuições (Costureiras)</h4>
                                                     <div className="space-y-3">
-                                                        {(order.splits || []).map((split) => (
-                                                            <div key={split.id} className="flex flex-col md:flex-row gap-4 border border-slate-100 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                                                        {(order.splits || []).map((split, idx) => (
+                                                            <div key={`${split.id}-${idx}`} className="flex flex-col md:flex-row gap-4 border border-slate-100 rounded-lg p-3 hover:bg-slate-50 transition-colors">
                                                                 <div className="flex-shrink-0 w-48 border-r border-slate-100 pr-4 flex flex-col justify-center">
                                                                     <div className="flex items-center gap-2 mb-1">
                                                                         <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">{split.seamstressName.charAt(0)}</div>
@@ -1167,8 +1179,8 @@ export default function App() {
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                                     {split.items.map((item, idx) => (
-                                                                         <div key={idx} className="bg-white border border-slate-100 rounded p-2 text-sm">
+                                                                     {split.items.map((item, i) => (
+                                                                         <div key={i} className="bg-white border border-slate-100 rounded p-2 text-sm">
                                                                              <div className="flex items-center gap-1 mb-1">
                                                                                  <div className="w-2 h-2 rounded-full" style={{backgroundColor: item.colorHex}}></div>
                                                                                  <span className="font-medium text-slate-600">{item.color}</span>
@@ -1179,7 +1191,7 @@ export default function App() {
                                                                 </div>
                                                                 <div className="flex-shrink-0 flex items-center pl-2 border-l border-slate-100">
                                                                     {split.status !== OrderStatus.FINISHED ? (
-                                                                        <button onClick={() => handleMarkSplitFinished(order.id, split.id)} className="text-emerald-600 hover:bg-emerald-50 px-3 py-2 rounded-lg text-xs font-bold border border-emerald-200 flex items-center gap-1"><PackageCheck size={16} /> Baixa</button>
+                                                                        <button onClick={() => handleMarkSplitFinished(order.id, idx)} className="text-emerald-600 hover:bg-emerald-50 px-3 py-2 rounded-lg text-xs font-bold border border-emerald-200 flex items-center gap-1"><PackageCheck size={16} /> Baixa</button>
                                                                     ) : (
                                                                         <div className="text-emerald-500 flex flex-col items-center px-2"><CheckCircle2 size={20} /><span className="text-[10px] font-bold">Concluído</span></div>
                                                                     )}
@@ -1326,8 +1338,8 @@ export default function App() {
                                       </td>
                                       <td className="p-4">
                                           <div className="space-y-3">
-                                              {(order.splits || []).map(s => (
-                                                  <div key={s.id} className="text-sm bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                              {(order.splits || []).map((s, idx) => (
+                                                  <div key={`${s.id}-${idx}`} className="text-sm bg-slate-50 p-2 rounded-lg border border-slate-100">
                                                       <div className="flex justify-between items-center mb-1 border-b border-slate-200 pb-1">
                                                           <span className="font-bold text-slate-700">{s.seamstressName}</span>
                                                           <div className="text-right">
