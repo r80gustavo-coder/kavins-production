@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, Edit2, Ruler } from 'lucide-react';
-import { ProductReference, GridType, ProductColor } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Save, Plus, Trash2, Edit2, Ruler, Layers } from 'lucide-react';
+import { ProductReference, GridType, ProductColor, Fabric } from '../types';
 
 interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (product: Omit<ProductReference, 'id'> | ProductReference) => void;
   productToEdit?: ProductReference | null;
+  fabrics?: Fabric[]; // Pass available fabrics for selection
 }
 
-export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, productToEdit }) => {
+export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, productToEdit, fabrics = [] }) => {
   const [formData, setFormData] = useState({
     code: '',
     description: '',
@@ -22,6 +23,18 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
   // New Color State
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#000000');
+  const [isFabricDropdownOpen, setIsFabricDropdownOpen] = useState(false);
+
+  // Derive unique fabric names from inventory for suggestions
+  const uniqueFabricNames = useMemo(() => {
+    return Array.from(new Set(fabrics.map(f => f.name))).sort();
+  }, [fabrics]);
+
+  // Derive available colors based on selected fabric
+  const availableColorsForFabric = useMemo(() => {
+    if (!formData.defaultFabric) return [];
+    return fabrics.filter(f => f.name.toLowerCase() === formData.defaultFabric.toLowerCase());
+  }, [formData.defaultFabric, fabrics]);
 
   useEffect(() => {
     if (isOpen) {
@@ -56,6 +69,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
     }
   };
 
+  const handleAddStockColor = (fabric: Fabric) => {
+    // Check if already added
+    if (formData.defaultColors.some(c => c.name === fabric.color)) return;
+
+    setFormData(prev => ({
+        ...prev,
+        defaultColors: [...prev.defaultColors, { name: fabric.color, hex: fabric.colorHex }]
+    }));
+  };
+
   const removeColor = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -77,8 +100,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-6 border-b border-slate-100 flex-shrink-0">
           <h2 className="text-xl font-bold text-slate-800">
             {productToEdit ? 'Editar Produto' : 'Cadastrar Produto'}
           </h2>
@@ -87,7 +110,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-1">
               <label className="block text-sm font-medium text-slate-700 mb-1">Código</label>
@@ -100,16 +123,34 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                 onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
               />
             </div>
-             <div className="col-span-1">
+             <div className="col-span-1 relative">
               <label className="block text-sm font-medium text-slate-700 mb-1">Tecido Padrão</label>
-              <input
-                required
-                type="text"
-                placeholder="Ex: Viscose"
-                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={formData.defaultFabric}
-                onChange={e => setFormData({ ...formData, defaultFabric: e.target.value })}
-              />
+              <div className="relative">
+                  <input
+                    required
+                    type="text"
+                    placeholder="Ex: Viscose"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={formData.defaultFabric}
+                    onChange={e => setFormData({ ...formData, defaultFabric: e.target.value })}
+                    onFocus={() => setIsFabricDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setIsFabricDropdownOpen(false), 200)}
+                  />
+                  {/* Fabric Suggestions */}
+                  {isFabricDropdownOpen && uniqueFabricNames.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-lg rounded-lg mt-1 z-10 max-h-40 overflow-y-auto">
+                          {uniqueFabricNames.filter(f => f.toLowerCase().includes(formData.defaultFabric.toLowerCase())).map(f => (
+                              <div 
+                                key={f} 
+                                className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm"
+                                onClick={() => setFormData({...formData, defaultFabric: f})}
+                              >
+                                  {f}
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
             </div>
           </div>
 
@@ -154,9 +195,32 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
             </div>
           </div>
 
-          <div>
+          <div className="border-t border-slate-100 pt-4">
             <label className="block text-sm font-medium text-slate-700 mb-2">Cores Disponíveis</label>
             
+            {/* Stock Colors Quick Pick */}
+            {availableColorsForFabric.length > 0 && (
+                <div className="mb-4 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                    <p className="text-xs font-bold text-indigo-700 mb-2 flex items-center gap-1">
+                        <Layers size={12}/> Cores no Estoque ({formData.defaultFabric}):
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {availableColorsForFabric.map(f => (
+                            <button
+                                key={f.id}
+                                type="button"
+                                onClick={() => handleAddStockColor(f)}
+                                className="flex items-center gap-1 px-2 py-1 bg-white border border-indigo-200 rounded-full text-xs hover:bg-indigo-100 transition-colors shadow-sm"
+                            >
+                                <div className="w-3 h-3 rounded-full border border-slate-200" style={{backgroundColor: f.colorHex}}></div>
+                                {f.color}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Manual Color Add */}
             <div className="flex gap-2 mb-4 items-end">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-slate-500">Seletor</span>
@@ -188,7 +252,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
 
             <div className="flex flex-wrap gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 min-h-[60px]">
               {formData.defaultColors.length === 0 && (
-                <span className="text-sm text-slate-400 italic">Nenhuma cor cadastrada.</span>
+                <span className="text-sm text-slate-400 italic">Nenhuma cor selecionada.</span>
               )}
               {formData.defaultColors.map((color, idx) => (
                 <span key={idx} className="bg-white border border-slate-200 text-slate-700 pl-1 pr-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 shadow-sm">
@@ -202,8 +266,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
               ))}
             </div>
           </div>
+        </form>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex justify-end gap-3 p-6 border-t border-slate-100 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
@@ -213,13 +278,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
             </button>
             <button
               type="submit"
+              onClick={handleSubmit}
               className="px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium flex items-center gap-2"
             >
               <Save size={18} />
               {productToEdit ? 'Atualizar' : 'Salvar'}
             </button>
           </div>
-        </form>
       </div>
     </div>
   );

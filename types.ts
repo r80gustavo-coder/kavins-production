@@ -45,6 +45,17 @@ export interface Seamstress {
   city?: string;    // New field
 }
 
+export interface Fabric {
+  id: string;
+  name: string; // Ex: Viscose, Linho
+  color: string; // Ex: Azul Bebê
+  colorHex: string;
+  stockRolls: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // New Interface for items inside an order
 export interface ProductionOrderItem {
   color: string;
