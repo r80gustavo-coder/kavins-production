@@ -328,6 +328,19 @@ export default function App() {
       }
   };
 
+  const handleDeleteProduct = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
+        try {
+            const { error } = await supabase.from('products').delete().eq('id', id);
+            if (error) throw error;
+            setReferences(prev => prev.filter(r => r.id !== id));
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            alert("Erro ao excluir produto.");
+        }
+    }
+  };
+
   const handleSaveProduct = async (product: Omit<ProductReference, 'id'> | ProductReference) => {
     try {
         // Ensure numeric fields are correctly formatted or null if not present
@@ -1608,7 +1621,7 @@ export default function App() {
                             <button onClick={() => {setEditingProduct(ref); setIsProductModalOpen(true);}} className="text-indigo-400 hover:text-indigo-600 p-2 hover:bg-indigo-50 rounded-lg transition-colors">
                                 <Edit2 size={16} />
                             </button>
-                            <button onClick={() => {if(confirm('Excluir?')) handleSaveProduct({...ref, id: ref.id} as any /* delete logic not impl in handleSave, use handleDelete */)}} className="text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors">
+                            <button onClick={() => handleDeleteProduct(ref.id)} className="text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors">
                                 <Trash2 size={16} />
                             </button>
                           </div>
