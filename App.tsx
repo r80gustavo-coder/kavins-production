@@ -795,17 +795,17 @@ export default function App() {
             .color-row {
                 display: flex;
                 align-items: center;
-                gap: 15px;
                 border-bottom: 1px dashed #eee;
                 padding: 5px 0;
             }
             .color-name {
-                width: 150px;
                 font-weight: bold;
+                /* Removed fixed width */
             }
             .fabric-code {
-                width: 150px;
                 font-size: 14px;
+                margin-left: 8px; /* The specific request: small space */
+                margin-right: 20px;
             }
             .rolls-qty {
                 width: 100px;
