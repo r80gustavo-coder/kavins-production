@@ -30,7 +30,9 @@ import {
   Scroll,
   Printer,
   Layers,
-  Palette
+  Palette,
+  PlusCircle,
+  Calendar
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -452,6 +454,36 @@ export default function App() {
         console.error("Error saving fabric:", error);
         alert("Erro ao salvar tecido.");
     }
+  };
+
+  const handleQuickStockAdd = async (fabric: Fabric) => {
+      const input = window.prompt(`Adicionar estoque para ${fabric.name} - ${fabric.color}.\n\nQuantos rolos entraram?`, '0');
+      if (input === null) return;
+      
+      const amountToAdd = parseFloat(input.replace(',', '.'));
+      if (isNaN(amountToAdd) || amountToAdd <= 0) {
+          alert('Por favor, insira um número válido maior que zero.');
+          return;
+      }
+
+      const newStock = parseFloat((fabric.stockRolls + amountToAdd).toFixed(2));
+      const updatedAt = new Date().toISOString();
+
+      try {
+          const { error } = await supabase.from('fabrics').update({ 
+              stockRolls: newStock,
+              updatedAt: updatedAt
+          }).eq('id', fabric.id);
+
+          if (error) throw error;
+
+          const updatedFabric = { ...fabric, stockRolls: newStock, updatedAt };
+          setFabrics(prev => prev.map(f => f.id === fabric.id ? updatedFabric : f));
+          alert(`Estoque atualizado! Novo saldo: ${newStock} rolos.`);
+      } catch (error) {
+          console.error("Error adding stock:", error);
+          alert("Erro ao atualizar estoque.");
+      }
   };
 
   const initiateMoveToCutting = async (order: ProductionOrder) => {
@@ -1166,8 +1198,11 @@ export default function App() {
                     {filteredFabrics.map(fabric => (
                         <div key={fabric.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 relative group transition-all hover:shadow-md hover:border-indigo-200">
                              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => { setFabricToEdit(fabric); setIsFabricModalOpen(true); }} className="text-slate-400 hover:text-indigo-600 p-1 bg-white rounded shadow-sm">
+                                <button onClick={() => { setFabricToEdit(fabric); setIsFabricModalOpen(true); }} className="text-slate-400 hover:text-indigo-600 p-1 bg-white rounded shadow-sm" title="Editar">
                                     <Edit2 size={16} />
+                                </button>
+                                <button onClick={() => handleQuickStockAdd(fabric)} className="text-emerald-500 hover:text-emerald-700 p-1 bg-white rounded shadow-sm hover:bg-emerald-50" title="Adicionar Estoque">
+                                    <PlusCircle size={16} />
                                 </button>
                              </div>
 
@@ -1363,7 +1398,13 @@ export default function App() {
                                                 <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                                                     <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-3"><Users size={18} className="text-amber-600"/> Distribuições (Costureiras)</h4>
                                                     <div className="space-y-3">
-                                                        {(order.splits || []).map((split, idx) => (
+                                                        {(order.splits || []).map((split, idx) => {
+                                                            // Calculate 15-day deadline from creation
+                                                            const deadlineDate = new Date(split.createdAt);
+                                                            deadlineDate.setDate(deadlineDate.getDate() + 15);
+                                                            const isLate = new Date() > deadlineDate && split.status !== OrderStatus.FINISHED;
+                                                            
+                                                            return (
                                                             <div key={`${split.id}-${idx}`} className="flex flex-col md:flex-row gap-4 border border-slate-100 rounded-lg p-3 hover:bg-slate-50 transition-colors">
                                                                 <div className="flex-shrink-0 w-48 border-r border-slate-100 pr-4 flex flex-col justify-center">
                                                                     <div className="flex items-center gap-2 mb-1">
@@ -1377,6 +1418,11 @@ export default function App() {
                                                                                 <Clock size={10} /> {new Date(split.finishedAt).toLocaleDateString()}
                                                                             </span>
                                                                         )}
+                                                                        {split.status !== OrderStatus.FINISHED && (
+                                                                            <span className={`text-[10px] flex items-center gap-1 mt-1 font-medium ${isLate ? 'text-red-500' : 'text-slate-400'}`}>
+                                                                                <Calendar size={10} /> Previsão: {deadlineDate.toLocaleDateString()}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -1386,7 +1432,17 @@ export default function App() {
                                                                                  <div className="w-2 h-2 rounded-full" style={{backgroundColor: item.colorHex}}></div>
                                                                                  <span className="font-medium text-slate-600">{item.color}</span>
                                                                              </div>
-                                                                             <div className="font-bold text-right text-slate-800">{item.actualPieces} pçs</div>
+                                                                             <div className="font-bold text-right text-slate-800 mb-1">{item.actualPieces} pçs</div>
+                                                                             {/* SHOW SIZES BREAKDOWN */}
+                                                                             <div className="flex flex-wrap gap-1 justify-end">
+                                                                                 {Object.entries(item.sizes).map(([size, qty]) => (
+                                                                                     (qty as number) > 0 && (
+                                                                                         <span key={size} className="text-[10px] bg-slate-50 border border-slate-100 px-1 rounded text-slate-500">
+                                                                                             {size}:{qty}
+                                                                                         </span>
+                                                                                     )
+                                                                                 ))}
+                                                                             </div>
                                                                          </div>
                                                                      ))}
                                                                 </div>
@@ -1398,7 +1454,8 @@ export default function App() {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             )}
