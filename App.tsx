@@ -803,6 +803,10 @@ export default function App() {
                 width: 150px;
                 font-weight: bold;
             }
+            .fabric-code {
+                width: 150px;
+                font-size: 14px;
+            }
             .rolls-qty {
                 width: 100px;
             }
@@ -843,13 +847,22 @@ export default function App() {
                   </div>
                   
                   <div class="colors-container">
-                      ${order.items.map(item => `
+                      ${order.items.map(item => {
+                          // Find matching fabric record to get notes
+                          const matchedFabric = fabrics.find(f => 
+                              f.name.toLowerCase() === order.fabric.toLowerCase() && 
+                              f.color.toLowerCase() === item.color.toLowerCase()
+                          );
+                          const fabricCode = matchedFabric?.notes ? matchedFabric.notes : '-';
+
+                          return `
                           <div class="color-row">
                               <span class="color-name">${item.color}</span>
+                              <span class="fabric-code">Cód: ${fabricCode}</span>
                               <span class="rolls-qty">Rolos: ${item.rollsUsed}</span>
                               <div class="notes-space"></div>
                           </div>
-                      `).join('')}
+                      `}).join('')}
                   </div>
               </div>
               `;
