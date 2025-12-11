@@ -711,7 +711,17 @@ export default function App() {
   };
 
   const handlePrintPlannedOrders = () => {
-    const plannedOrders = orders.filter(o => o.status === OrderStatus.PLANNED);
+    // Sort orders by ID for the print report
+    const plannedOrders = orders
+        .filter(o => o.status === OrderStatus.PLANNED)
+        .sort((a, b) => {
+            const numA = Number(a.id);
+            const numB = Number(b.id);
+            // If both are numbers, sort numerically ascending
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            // Otherwise sort alphanumerically
+            return a.id.localeCompare(b.id);
+        });
     
     if (plannedOrders.length === 0) {
         alert("Não há pedidos planejados para imprimir.");
